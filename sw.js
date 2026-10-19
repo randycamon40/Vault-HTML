@@ -62,3 +62,6 @@ self.addEventListener("fetch", e => {
     );
   }
 });
+
+const BASE_PATH = '/index.html';
+const ASSETS_CORE = [BASE_PATH, BASE_PATH + "index.html", BASE_PATH + "manifest.json", BASE_PATH + "icon-192.png", BASE_PATH + "icon-512.png", BASE_PATH + "privacy.html", BASE_PATH + "terms.html"];
