@@ -2,8 +2,8 @@
   "name": "HTML Vault Pro",
   "short_name": "Vault",
   "description": "Kelola dan preview file HTML offline - PWA",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#f6f5f2",
@@ -21,5 +21,10 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "id": "./",
+  "display_override": [
+    "standalone",
+    "window-controls-overlay"
   ]
 }

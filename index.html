@@ -107,31 +107,6 @@ mark{background:var(--primary);color:var(--on);border-radius:4px;padding:0 2px}
 .lg{font:12px/1.5 ui-monospace,Menlo,monospace;padding:8px 4px;border-bottom:1px solid var(--border);word-break:break-all}.lg span{color:var(--mute)}.lg.error{color:var(--red)}
 .tabs{display:flex;gap:6px;padding:0 14px 8px}.tabs .bt.pr{background:var(--primary)}
 input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
-/* ===== Anti pull-to-reload & anti seleksi long-press (PWA) ===== */
-html, body {
-  overscroll-behavior: none;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y;
-}
-#app {
-  overscroll-behavior: none;
-  overscroll-behavior-y: contain;
-}
-/* disable callout & selection globally, except editor */
-* {
-  -webkit-touch-callout: none;
-}
-.pg, .hd, .bar, .it, .bt, .ib, .mi, .si, .cd, .lg, .nm, small, b, h3, h4, span {
-  -webkit-user-select: none;
-  user-select: none;
-}
-#ed, #gut, input, textarea, select, #q, #mi, #lq, #cnt, #cons, #fw, #fr {
-  -webkit-user-select: text !important;
-  user-select: text !important;
-  -webkit-touch-callout: default !important;
-}
-
 </style>
 </head>
 <body>
@@ -185,26 +160,7 @@ const NAV=[["home","Beranda","home"],["preview","Preview","eye"],["editor","Kode
 const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const ST=Object.assign({theme:"light",fs:14,tab:2,autosave:true,autoclose:true,wrap:false,remember:false,lastFolder:null,view:"list"},ls.get("settings",{}));
 const saveST=()=>ls.set("settings",ST);
-function applyST(){
-  document.documentElement.dataset.t=ST.theme;
-  document.documentElement.style.setProperty("--efs",ST.fs+"px");
-  document.documentElement.style.setProperty("--etab",ST.tab);
-  ed.classList.toggle("wr",ST.wrap);
-  // sync status bar / theme-color with current theme
-  try{
-    const tc = TC[ST.theme] || TC.light;
-    const bg = tc[0];
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if(meta) meta.setAttribute('content', bg);
-    // for iOS status bar
-    const meta2 = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-    if(meta2 && (ST.theme==='dark' || ST.theme==='midnight' || ST.theme==='forest' || ST.theme==='dracula')){
-      // dark themes -> keep default, light themes -> default
-    }
-    // also update browser chrome on Android via theme-color
-    if(window.matchMedia) document.documentElement.style.setProperty('--status-bg', bg);
-  }catch(e){}
-}
+function applyST(){document.documentElement.dataset.t=ST.theme;document.documentElement.style.setProperty("--efs",ST.fs+"px");document.documentElement.style.setProperty("--etab",ST.tab);ed.classList.toggle("wr",ST.wrap)}
 let db;
 const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open("htmlvault",1);r.onupgradeneeded=()=>{["files","folders","logs"].forEach(s=>r.result.createObjectStore(s,{keyPath:"id"}))};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);r.onblocked=()=>rej(new Error("DB diblokir"))});
 const tx=(s,m,f)=>new Promise((res,rej)=>{const t=db.transaction(s,m);let o;try{o=f(t.objectStore(s))}catch(e){return rej(e)}t.oncomplete=()=>res(o&&o.result);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)});
@@ -390,88 +346,12 @@ window.addEventListener("error",e=>{try{log("error",e.message)}catch(x){}});
 window.addEventListener("unhandledrejection",e=>{try{log("error",e.reason&&e.reason.message||e.reason)}catch(x){}});
 window.addEventListener("beforeunload",()=>{if(S.dirty&&S.openId)ls.set("lastEditorContent",ed.value.length>2e6?"":ed.value)});
 
-
-/* ===== Script: disable pull-to-refresh & long-press selection ===== */
-(function(){
-  // Disable context menu except in editor/inputs
-  document.addEventListener('contextmenu', function(e){
-    const ok = e.target.closest('#ed, input, textarea, select');
-    if(!ok) e.preventDefault();
-  }, {passive:false});
-
-  // Disable text selection start outside editor
-  document.addEventListener('selectstart', function(e){
-    const ok = e.target.closest('#ed, #gut, input, textarea, select, #cons');
-    if(!ok) e.preventDefault();
-  });
-
-  // Prevent pull-to-refresh on Android Chrome
-  let lastY = 0;
-  let startY = 0;
-  document.addEventListener('touchstart', function(e){
-    if(e.touches.length===1) startY = e.touches[0].clientY;
-  }, {passive:true});
-  document.addEventListener('touchmove', function(e){
-    const el = e.target;
-    // allow scroll inside list, editor wrapper, console
-    const scrollable = el.closest('#list, .sc, #cons, .ew, #ed, #fw');
-    if(!scrollable) {
-      // if at top and pulling down, block
-      const curY = e.touches[0].clientY;
-      if(curY > startY && window.scrollY===0){
-        e.preventDefault();
-      }
-    } else {
-      // if scrollable is at top and pulling down, block pull-to-refresh but allow inner scroll
-      if(scrollable.scrollTop <= 0){
-        const curY = e.touches[0].clientY;
-        if(curY > startY){
-          // check if it's overscrolling beyond top
-          if(window.scrollY===0) {
-            // prevent browser pull
-            // only if the inner element is also at top
-            if(scrollable.scrollTop <= 0) e.preventDefault();
-          }
-        }
-      }
-    }
-  }, {passive:false});
-
-  // Extra: lock overscroll in PWA
-  document.body.addEventListener('touchmove', function(e){
-    // if body is scrolling (shouldn't), block
-    if(e.target===document.body) e.preventDefault();
-  }, {passive:false});
-
-})();
-
 /* ===== PWA - Service Worker & Back Lock khusus Preview (hanya di mode PWA) ===== */
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || document.referrer.includes('android-app://');
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js').then(reg=>{
-      console.log('SW registered');
-      // force update check every time page loads
-      try{ reg.update(); }catch(e){}
-      reg.addEventListener('updatefound', ()=>{
-        const newWorker = reg.installing;
-        if(!newWorker) return;
-        newWorker.addEventListener('statechange', ()=>{
-          if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
-            // new version ready -> skip waiting langsung
-            newWorker.postMessage({type:'SKIP_WAITING'});
-          }
-        });
-      });
-    }).catch(e=>console.warn('SW fail', e));
-  });
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
-    if(!refreshing){
-      refreshing = true;
-      window.location.reload();
-    }
+    navigator.serviceWorker.register('./sw.js').then(()=>console.log('SW registered')).catch(e=>console.warn('SW fail', e));
   });
 }
 
@@ -516,90 +396,6 @@ window.addEventListener("popstate", (e)=>{
     vib();
   }
 });
-
-
-/* ===== Legal: Privacy & Terms - inject footer + modal loader ===== */
-(function(){
-  // Inject style for legal footer
-  const style = document.createElement('style');
-  style.textContent = `
-    #legal-bar{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;gap:8px;justify-content:center;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--border);font-size:12px;color:var(--mute)}
-    #legal-bar a{color:var(--primary);text-decoration:none;font-weight:500;cursor:pointer}
-    #legal-bar span{opacity:.5}
-    .legal-sheet{max-width:720px}
-    .legal-sheet .content{max-height:60vh;overflow:auto;font-size:13px;line-height:1.6}
-  `;
-  document.head.appendChild(style);
-
-  function createLegalBar(){
-    if(document.getElementById('legal-bar')) return;
-    const bar = document.createElement('div');
-    bar.id = 'legal-bar';
-    bar.innerHTML = `<a data-legal="privacy">Privacy</a><span>•</span><a data-legal="terms">Terms</a><span>•</span><a href="./.well-known/assetlinks.json" target="_blank" rel="noopener">AssetLinks</a>`;
-    document.getElementById('app').appendChild(bar);
-    bar.addEventListener('click', (e)=>{
-      const a = e.target.closest('[data-legal]');
-      if(a){ e.preventDefault(); openLegal(a.dataset.legal); }
-    });
-  }
-
-  async function openLegal(which){
-    const file = which==='privacy' ? './privacy.html' : './terms.html';
-    const title = which==='privacy' ? 'Privacy Policy' : 'Terms of Service';
-    try{
-      // fetch and extract body text for modal
-      const res = await fetch(file, {cache:'no-store'});
-      const htmlText = await res.text();
-      // extract main card content
-      const m = htmlText.match(/<div class="card">([\s\S]*?)<\/div>\s*<div class="card">/);
-      const content = m ? m[1].replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,800)+'...' : 'Buka halaman lengkap';
-      // show sheet with option to open full page
-      sheet(title, 'Tap untuk buka halaman penuh', [
-        {l:'Buka '+title+' lengkap', i:'ext', fn:()=> window.open(file,'_blank')},
-        {l:'Tutup', i:'info', fn:()=>{}}
-      ]);
-      // also inject full content into sheet after open
-      setTimeout(()=>{
-        const shc = document.getElementById('shc');
-        if(shc){
-          const div = document.createElement('div');
-          div.className = 'legal-sheet';
-          div.innerHTML = `<div class="content">${content}<br><br><a href="${file}" target="_blank" style="color:var(--primary)">Baca selengkapnya →</a></div>`;
-          shc.appendChild(div);
-        }
-      },100);
-    }catch(e){
-      // fallback open directly
-      window.open(file,'_blank');
-    }
-  }
-
-  // Expose globally for manual calls
-  window.openLegal = openLegal;
-
-  // Auto inject bar after app ready
-  window.addEventListener('load', ()=>{
-    setTimeout(createLegalBar, 500);
-    // also add links into Settings page render
-    const origRenderSet = window.renderSet;
-    if(typeof origRenderSet === 'function'){
-      window.renderSet = async function(){
-        const res = await origRenderSet();
-        setTimeout(()=>{
-          const sc = document.querySelector('#p-settings .sc');
-          if(sc && !document.getElementById('legal-links-setting')){
-            const div = document.createElement('div');
-            div.id = 'legal-links-setting';
-            div.className = 'cd';
-            div.innerHTML = `<h4>Legal</h4><div class="rw"><button class="bt" onclick="openLegal('privacy')">Privacy Policy</button><button class="bt" onclick="openLegal('terms')">Terms</button></div><small style="color:var(--mute)">AssetLinks ada di <code>/.well-known/assetlinks.json</code> untuk verifikasi Play Store / TWA.</small>`;
-            sc.appendChild(div);
-          }
-        },100);
-        return res;
-      };
-    }
-  });
-})();
 
 try{const m={name:"HTML Vault Pro",short_name:"Vault",display:"standalone",start_url:".",background_color:"#f6f5f2",theme_color:"#2f6f5e",icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#2f6f5e"/><path d="M30 24h22l14 14v34H30z" fill="none" stroke="#fff" stroke-width="4"/></svg>'),sizes:"any",type:"image/svg+xml"}]};const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/manifest+json"}));document.head.appendChild(l)}catch(e){}
 const TOUR=["Import file .html dengan tombol Import atau seret ke layar. Semua tersimpan di perangkat.","Ketuk file untuk membuka, ubah nama, ekspor, atau hapus ke Trash. Tahan folder untuk mengelolanya.","Di Preview, tarik garis kecil di kanan atas ke kiri untuk membuka navigasi."];
