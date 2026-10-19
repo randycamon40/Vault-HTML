@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="id" data-t="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f5f2">
+<title>Privacy Policy - HTML Vault Pro</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--text:#1d1d1f;--border:#e4e2dc;--primary:#2f6f5e;--on:#fff;--mute:#8a8a85}
+*{box-sizing:border-box;margin:0} body{font:15px/1.6 system-ui,-apple-system,Segoe UI,Roboto;background:var(--bg);color:var(--text);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+a{color:var(--primary)} .wrap{max-width:720px;margin:0 auto;padding:20px}
+header{display:flex;align-items:center;gap:10px;padding:16px 20px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;margin:16px 0}
+h1{font-size:22px} h2{font-size:17px;margin:18px 0 8px} p,li{color:var(--text)} ul{padding-left:18px} small{color:var(--mute)}
+</style>
+</head>
+<body>
+<header><a href="./" style="text-decoration:none">← Kembali</a><b style="margin-left:8px">Privacy Policy</b></header>
+<div class="wrap">
+  <div class="card">
+    <h1>Privacy Policy - HTML Vault Pro</h1>
+    <small>Terakhir diperbarui: 19 Mei 2026</small>
+    <h2>Ringkasan</h2>
+    <p>HTML Vault Pro bekerja <b>100% offline</b>. Semua file HTML, folder, dan log disimpan di <b>IndexedDB perangkatmu</b>. Kami tidak mengirim filemu ke server manapun.</p>
+    <h2>Data yang Kami Kumpulkan</h2>
+    <ul>
+      <li><b>Tidak ada</b> pelacakan, analytics, atau iklan pihak ketiga di dalam aplikasi.</li>
+      <li>File HTML tetap di browser kamu. Backup/Restore hanya terjadi jika kamu sendiri yang menekan tombol Export.</li>
+    </ul>
+    <h2>Penyimpanan</h2>
+    <p>Data disimpan via IndexedDB dan localStorage. Menghapus data aplikasi di pengaturan browser akan menghapus semua vault.</p>
+    <h2>Izin</h2>
+    <p>Aplikasi hanya meminta izin penyimpanan lokal. Tidak ada akses kamera, lokasi, atau kontak.</p>
+    <h2>Kontak</h2>
+    <p>Jika ada pertanyaan: buat issue di GitHub repository proyek ini.</p>
+  </div>
+  <div class="card"><small>© 2026 HTML Vault Pro — Privacy • Offline First</small></div>
+</div>
+<script>
+// sync theme from main app
+try{
+  const s = JSON.parse(localStorage.getItem('settings')||'{}');
+  if(s.theme) document.documentElement.dataset.t = s.theme;
+}catch(e){}
+</script>
+</body>
+</html>
