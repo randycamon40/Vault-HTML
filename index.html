@@ -72,7 +72,7 @@ mark{background:var(--primary);color:var(--on);border-radius:4px;padding:0 2px}
 #md{align-items:center;justify-content:center;padding:20px;z-index:70}
 .mc{width:100%;max-width:340px;background:var(--card);border-radius:24px;padding:20px;display:grid;gap:12px;transform:scale(.94);transition:transform .3s var(--ease)}
 #md.on .mc{transform:none}.mc .row{display:flex;gap:8px;justify-content:flex-end}
-#toast{position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:90;padding:10px 18px;border-radius:99px;background:var(--text);color:var(--bg);opacity:0;pointer-events:none;transition:transform .3s var(--ease),opacity .3s var(--ease);white-space:nowrap}
+#toast{position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:90;padding:10px 16px;border-radius:18px;background:var(--text);color:var(--bg);opacity:0;pointer-events:none;transition:transform .3s var(--ease),opacity .3s var(--ease);white-space:normal;max-width:calc(100% - 32px);word-break:break-word;text-align:center;line-height:1.35}
 #toast.on{opacity:1;transform:translate(-50%,0)}#toast.e{background:var(--red);color:#fff}
 .fab{position:absolute;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:20px;background:var(--primary);color:var(--on);display:grid;place-items:center;box-shadow:0 10px 24px rgba(0,0,0,.25)}
 .tl{display:flex;gap:2px;padding:0 10px 6px;overflow-x:auto;scrollbar-width:none}
@@ -115,6 +115,24 @@ mark{background:var(--primary);color:var(--on);border-radius:4px;padding:0 2px}
 .tabs{display:flex;gap:6px;padding:0 14px 8px}.tabs .bt.pr{background:var(--primary)}
 input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
 input,textarea,select,[contenteditable]{user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
+/* ===== Batch Replace Modal ===== */
+#bmd,#pemd{align-items:flex-end;justify-content:center}
+#bmd .bmc,#pemd .bmc{width:100%;max-width:440px;background:var(--card);border-radius:24px 24px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));display:grid;gap:8px;transform:translateY(100%);transition:transform .3s var(--ease);max-height:90dvh;overflow:auto}
+#bmd.on .bmc,#pemd.on .bmc{transform:none}
+.bmhd{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:15px}
+.bmhd .ib{width:34px;height:34px;border-radius:12px;background:var(--bg)}
+#bm-ta,#pemd-ta{width:100%;height:180px;min-height:100px;max-height:45vh;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:14px;font:12.5px/1.5 ui-monospace,Menlo,monospace;resize:vertical;outline:none;white-space:pre;overflow:auto;-webkit-appearance:none}
+#bm-ta:focus,#pemd-ta:focus{border-color:var(--primary)}
+#pemd-ta{height:260px;max-height:50vh;white-space:pre-wrap;word-wrap:break-word}
+.bmrow{display:flex;gap:6px;align-items:center}
+.bmrow .bt{padding:9px 12px;font-size:12.5px;flex-shrink:0}
+.bmrow .bt.pr{flex:1}
+.bmst{padding:9px 12px;text-align:center;font-size:12.5px;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--mute);transition:all .2s}
+.bmst.err{color:var(--red);border-color:var(--red);background:color-mix(in srgb,var(--red) 8%,var(--card))}
+.bmst.ok{color:var(--primary);border-color:var(--primary);background:color-mix(in srgb,var(--primary) 8%,var(--card))}
+.bmdt{display:none;max-height:150px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:6px;-webkit-overflow-scrolling:touch}
+.bmdt .bi{display:flex;gap:6px;padding:4px 8px;border-radius:6px;margin-bottom:2px;background:var(--card);font:11px/1.4 ui-monospace,Menlo,monospace;align-items:flex-start}
+.bmdt .bi:last-child{margin-bottom:0}
 </style>
 </head>
 <body>
@@ -149,6 +167,37 @@ input,textarea,select,[contenteditable]{user-select:text;-webkit-user-select:tex
  <div id="menu"></div>
  <div class="ov" id="sh"><div id="shc"></div></div>
  <div class="ov" id="md"></div>
+<div class="ov" id="bmd">
+  <div class="bmc">
+    <div class="bmhd">
+      <span>⚡ Batch Replace</span>
+      <button class="ib" id="bm-close" aria-label="Tutup">✕</button>
+    </div>
+    <button class="bt" id="bm-prompt" style="padding:9px 12px;font-size:12px;text-align:center" title="Tap: copy prompt AI · Tahan untuk edit prompt">🤖 Copy Prompt AI · tahan edit</button>
+    <textarea id="bm-ta" placeholder="Paste hasil AI di sini. Format:&#10;&#10;CARI:&#10;[teks asli]&#10;&#10;GANTI DENGAN:&#10;[teks pengganti]&#10;&#10;Pisah tiap blok dengan ---" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+    <div class="bmrow">
+      <button class="bt" id="bm-paste">📋 Paste</button>
+      <button class="bt" id="bm-check">🔍 Cek</button>
+      <button class="bt pr" id="bm-apply">⚡ Terapkan</button>
+      <button class="bt dg" id="bm-clear">🗑</button>
+    </div>
+    <div class="bmst" id="bm-st">—</div>
+    <div class="bmdt" id="bm-dt"></div>
+  </div>
+</div>
+ <div class="ov" id="pemd">
+  <div class="bmc">
+    <div class="bmhd">
+      <span>🤖 Edit Prompt AI</span>
+      <button class="ib" id="pemd-close" aria-label="Tutup">✕</button>
+    </div>
+    <textarea id="pemd-ta" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+    <div class="bmrow">
+      <button class="bt" id="pemd-reset">↺ Reset</button>
+      <button class="bt pr" id="pemd-save">💾 Simpan</button>
+    </div>
+  </div>
+ </div>
  <div id="toast"></div>
  <input type="file" id="fin" accept=".html,.htm,text/html" multiple hidden>
  <input type="file" id="rin" accept=".json" hidden>
@@ -201,6 +250,7 @@ document.querySelector(".fab").innerHTML=ic("plus");
 $("#snv").innerHTML=NAV.map(n=>'<button class="mi" data-a="go" data-p="'+n[0]+'">'+ic(n[2])+n[1]+'</button>').join("");
 
 function go(p){
+  if(window.__nav&&!window.__nav.inPop&&S.page!==p)window.__nav.push();
   S.page=p;
   closeMenu(); closeSnv();
   document.querySelectorAll(".pg").forEach(e=>e.classList.toggle("on",e.id==="p-"+p));
@@ -223,8 +273,10 @@ function exportFile(f){const b=new Blob([f.content],{type:"text/html"}),a=docume
 async function importList(list){let n=0;const target=ST.remember&&ST.lastFolder&&folders.some(x=>x.id===ST.lastFolder)?ST.lastFolder:S.folder;
  for(const f of list){if(!/\.html?$/i.test(f.name))continue;try{await addFile(f.name,await f.text(),target);n++}catch(e){log("error",e&&e.message||e,f.name)}}
  toast(n?n+" file diimpor":"Tidak ada file .html",n?"":"e");renderList()}
+function moveSheet(f){var list=[{id:null,n:"🏠 Root (luar folder)"}];folders.forEach(function(fd){if(fd.id===f.folderId)return;list.push({id:fd.id,n:"📁 /"+path(fd.id).join("/")})});if(list.length<2&&list[0].id===f.folderId){toast("Tidak ada folder tujuan lain");return}sheet("Pindah file ke…",f.name,list.map(function(x){return{l:x.n,i:"folder",fn:async function(){await updFile(f,{folderId:x.id});log("activity","Dipindah ke "+(x.id?"/"+path(x.id).join("/"):"Root"),f.name);renderList();toast("Dipindah")}}}))}
 function fileSheet(f){sheet(f.name,kb(f.size)+" · "+f.lines+" baris · "+dt(f.updatedAt),[
  {l:"Open",i:"eye",fn:()=>openFile(f.id)},
+ {l:"Pindah ke folder…",i:"folder",fn:()=>moveSheet(f)},
  {l:"Ubah nama",i:"edit",fn:async()=>{const n=await modal("Ubah nama",{input:1,val:f.name,ok:"Simpan"});if(n){const old=f.name;await updFile(f,{name:n});log("activity","Nama diubah: "+old+" → "+n,n);renderList()}}},
  {l:"Save / Export",i:"down",fn:()=>exportFile(f)},
  {l:"Duplikat",i:"copy",fn:async()=>{await addFile(f.name.replace(/(\.html?)?$/i," (salinan)$1"),f.content,f.folderId);renderList();toast("Diduplikat")}},
@@ -258,6 +310,8 @@ L.addEventListener("dragleave",e=>{const it=e.target.closest(".it");it&&it.class
 L.addEventListener("drop",async e=>{e.preventDefault();const it=e.target.closest('[data-a="folder"]');document.querySelectorAll(".drop").forEach(x=>x.classList.remove("drop"));
  if(e.dataTransfer.files.length&&!e.dataTransfer.getData("text/plain"))return importList([...e.dataTransfer.files]);
  const f=gf(e.dataTransfer.getData("text/plain"));if(f&&it){await updFile(f,{folderId:it.dataset.id});log("activity","Dipindah ke folder",f.name);renderList();toast("Dipindah")}});
+$("#crumb").addEventListener("dragover",e=>e.preventDefault());
+$("#crumb").addEventListener("drop",async e=>{e.preventDefault();const c=e.target.closest('[data-a="crumb"]');if(!c)return;const f=gf(e.dataTransfer.getData("text/plain"));if(!f)return;await updFile(f,{folderId:c.dataset.id||null});log("activity","Dipindah ke breadcrumb",f.name);renderList();toast("Dipindah")});
 $("#p-home").addEventListener("dragover",e=>e.preventDefault());
 $("#p-home").addEventListener("drop",e=>{e.preventDefault();if(e.dataTransfer.files.length)importList([...e.dataTransfer.files])});
 const ed=$("#ed"),gut=$("#gut");
@@ -315,7 +369,7 @@ async function renderSet(){const tr=files.filter(f=>f.isTrashed);
  '<div class="cd"><h4>Penyimpanan</h4><div class="ub"><i id="ubar"></i></div><small id="utx" style="color:var(--mute)"></small><small style="color:var(--mute)">'+files.filter(f=>!f.isTrashed).length+' file · '+folders.length+' folder</small>'+chk("remember","Ingat folder pilihan save")+
  '<div class="rw"><button class="bt" data-a="backup">Backup</button><button class="bt" data-a="restore">Restore</button><button class="bt dg" data-a="wipe">Hapus semua</button></div></div>'+
  '<div class="cd"><h4>Trash ('+tr.length+')</h4>'+tr.map(f=>'<div class="rw"><span class="nm">'+esc(f.name)+'</span><span><button class="bt" data-a="restoref" data-id="'+f.id+'">Restore</button> <button class="bt dg" data-a="purge" data-id="'+f.id+'">Hapus</button></span></div>').join("")+(tr.length?'<button class="bt dg" data-a="cltrash">Kosongkan trash</button>':'<small style="color:var(--mute)">Trash kosong</small>')+'</div>'+
- '<div class="cd"><h4>Tentang</h4><small style="color:var(--mute)">HTML Vault Pro v1.0 · data tersimpan di IndexedDB perangkat ini.</small><button class="bt" data-a="install">Install PWA</button><button class="bt" data-a="tour">Tutorial ulang</button></div></div>';
+ '<div class="cd"><h4>Tentang</h4><small style="color:var(--mute)">HTML Vault Pro v1.0 · data tersimpan di IndexedDB perangkat ini.</small></div></div>';
  document.querySelectorAll(".mb").forEach(b=>b.innerHTML=ic("more"));
  try{const e=await navigator.storage.estimate();$("#ubar").style.width=Math.min(100,e.usage/e.quota*100)+"%";$("#utx").textContent=kb(e.usage)+" dari "+(e.quota/1048576).toFixed(0)+" MB dipakai"}catch(x){$("#utx").textContent="Estimasi tidak tersedia"}}
 $("#p-settings").addEventListener("change",e=>{const t=e.target;if(t.dataset.k){ST[t.dataset.k]=t.checked;saveST();applyST()}if(t.dataset.r){ST[t.dataset.r]=+t.value;saveST();applyST();const v=$("#fsv");if(v)v.textContent=ST.fs+"px"}});
@@ -329,8 +383,8 @@ const A={
  imp(){$("#fin").click()},
  async mkdir(){const n=await modal("Folder baru",{input:1,ok:"Buat"});if(n){const f={id:uid(),name:n,parentId:S.folder,createdAt:Date.now()};await dbPut("folders",f);folders.push(f);log("activity","Folder dibuat",n);renderList()}},
  view(){ST.view=ST.view==="grid"?"list":"grid";saveST();renderList()},
- new:newFile,crumb(t){S.folder=t.dataset.id||null;renderList()},
- folder(t){if(lpd)return;S.q="";$("#q").value="";S.folder=t.dataset.id;renderList()},
+ new:newFile,crumb(t){var nid=t.dataset.id||null;if(window.__nav&&!window.__nav.inPop&&S.folder!==nid)window.__nav.push();S.folder=nid;renderList()},
+ folder(t){if(lpd)return;S.q="";$("#q").value="";if(window.__nav&&!window.__nav.inPop&&S.folder!==t.dataset.id)window.__nav.push();S.folder=t.dataset.id;renderList()},
  file(t){const f=gf(t.dataset.id);if(f)fileSheet(f)},
  async copy(){try{await navigator.clipboard.writeText(ed.value)}catch(e){ed.select();document.execCommand("copy")}toast("Disalin")},
  async paste(){try{const t=await navigator.clipboard.readText();ed.setRangeText(t,ed.selectionStart,ed.selectionEnd,"end");ed.dispatchEvent(new Event("input"));ed.focus()}catch(e){ed.focus();toast("Izin clipboard ditolak, gunakan Ctrl+V","e")}},
@@ -362,7 +416,50 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(md.classList.con
 if(window.visualViewport){const f=()=>{$("#app").style.height=visualViewport.height+"px"};visualViewport.addEventListener("resize",f);f()}
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();S.deferred=e});
 
-window.addEventListener("popstate",()=>{});
+(function(){
+  try{history.replaceState({__v:1},'')}catch(e){}
+  window.__nav={inPop:false,push:function(){if(this.inPop)return;try{var cur=(history.state&&history.state.__v)||1;history.pushState({__v:cur+1},'')}catch(e){}}};
+  function closeTopLayer(){
+    var d=document;
+    var pemd=d.getElementById('pemd');if(pemd&&pemd.classList.contains('on')){var cb=d.getElementById('pemd-close');if(cb)cb.click();else{pemd.classList.remove('on')}return true}
+    var bmd=d.getElementById('bmd');if(bmd&&bmd.classList.contains('on')){var cb2=d.getElementById('bm-close');if(cb2)cb2.click();else{bmd.classList.remove('on')}return true}
+    var mdl=d.getElementById('md');if(mdl&&mdl.classList.contains('on')){var cancel=mdl.querySelector('[data-m="0"]');if(cancel)cancel.click();else{mdl.classList.remove('on')}return true}
+    var shEl=d.getElementById('sh');if(shEl&&shEl.classList.contains('on')){shEl.classList.remove('on');return true}
+    var menuEl=d.getElementById('menu');if(menuEl&&menuEl.classList.contains('on')){menuEl.classList.remove('on');return true}
+    var snv=d.getElementById('snv');if(snv&&snv.classList.contains('on')){snv.classList.remove('on');var snb=d.getElementById('snb');if(snb)snb.classList.remove('on');return true}
+    if(typeof S!=='undefined'&&S.cons){S.cons=false;var cons=d.getElementById('cons');if(cons)cons.classList.remove('on');return true}
+    return false
+  }
+  var exitTimer=null;
+  window.addEventListener('popstate',function(){
+    window.__nav.inPop=true;
+    try{
+      if(closeTopLayer()){
+        try{var cur=(history.state&&history.state.__v)||1;history.pushState({__v:cur+1},'')}catch(e){}
+        return
+      }
+      if(typeof S!=='undefined'&&S.page!=='home'){
+        try{go('home')}catch(e){try{A.go({dataset:{p:'home'}})}catch(e2){}}
+        return
+      }
+      if(typeof S!=='undefined'&&S.q){
+        S.q='';var q=document.getElementById('q');if(q)q.value='';try{renderList()}catch(e){}
+        return
+      }
+      if(typeof S!=='undefined'&&S.folder){
+        var fd=folders.find(function(x){return x.id===S.folder});S.folder=fd?fd.parentId:null;try{renderList()}catch(e){}
+        return
+      }
+      // Home root: double-back untuk keluar
+      if(exitTimer){clearTimeout(exitTimer);exitTimer=null;return}
+      exitTimer=setTimeout(function(){exitTimer=null},2000);
+      try{history.pushState({__v:1},'')}catch(e){}
+      if(typeof toast==='function')toast('Tekan back sekali lagi untuk keluar')
+    }finally{
+      window.__nav.inPop=false
+    }
+  })
+})();
 window.addEventListener("error",e=>{try{log("error",e.message)}catch(x){}});
 window.addEventListener("unhandledrejection",e=>{try{log("error",e.reason&&e.reason.message||e.reason)}catch(x){}});
 window.addEventListener("beforeunload",()=>{if(S.dirty&&S.openId)ls.set("lastEditorContent",ed.value.length>2e6?"":ed.value)});
@@ -374,6 +471,114 @@ async function tour(i){if(i>=TOUR.length){ls.set("onboarded",1);return}const ok=
  const id=ls.get("lastOpenedFileId",null),f=id&&gf(id);
  if(f&&!f.isTrashed){S.openId=id;const le=ls.get("lastEditorContent",null);ed.value=typeof le==="string"&&le&&le!==f.content?le:f.content;setDirty(ed.value!==f.content)}
  updCount();renderList();if(!ls.get("onboarded",0))tour(0)})();
+/* ===== Batch Replace ===== */
+function bmFindAnchor(text,needle){if(!needle)return null;var idx=text.indexOf(needle);if(idx!==-1)return{index:idx,length:needle.length,variant:'exact'};var v2=needle.replace(/^[ \t]+/,'');if(v2&&v2!==needle){var i2=text.indexOf(v2);if(i2!==-1&&text.indexOf(v2,i2+1)===-1)return{index:i2,length:v2.length,variant:'trimStart'}}var v3=needle.replace(/^[ \t]+/gm,'');if(v3&&v3!==needle&&v3!==v2){var i3=text.indexOf(v3);if(i3!==-1&&text.indexOf(v3,i3+1)===-1)return{index:i3,length:v3.length,variant:'trimAll'}}return null}
+function bmParsePairs(input){if(!input||!input.trim())return[];var pairs=[];var lines=input.replace(/\r\n?/g,'\n').split('\n');var current=null,mode=null,buf=[];function flush(){if(!current){buf=[];return}var text=buf.join('\n').replace(/^\n+|\n+$/g,'');if(mode==='find')current.find=text;else if(mode==='replace')current.replace=text;buf=[]}function pushCurrent(){flush();if(current&&(typeof current.find==='string'||typeof current.replace==='string'))pairs.push(current);current=null;mode=null;buf=[]}for(var i=0;i<lines.length;i++){var line=lines[i];line=line.replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');line=line.replace(/"/g,'"').replace(/'/g,"'").replace(/'/g,"'");line=line.replace(/<=/g,'<=').replace(/>=/g,'>=');line=line.replace(/[""]/g,'"').replace(/['']/g,"'");line=line.replace(/\u00A0/g,' ');var rawTrimmed=line.trim();if(/^-{3,}\s*$/.test(rawTrimmed)){pushCurrent();continue}var trimmed=line.trim().replace(/^[-*•>\s]+/,'').replace(/^[`*_]+/,'').replace(/[`*_\s]+$/,'').trim();if(/^CARI\s*:\s*$/i.test(trimmed)){pushCurrent();current={};mode='find';continue}if(/^GANTI\s+DENGAN\s*:\s*$/i.test(trimmed)||/^GANTI\s*:\s*$/i.test(trimmed)){flush();mode='replace';continue}if(/^#{1,6}\s/.test(trimmed)){pushCurrent();continue}if(/^Perubahan\s+\d+/i.test(trimmed)){pushCurrent();continue}if(/^(Fungsi|Lokasi|Catatan\s+penting|Catatan|Note|Notes)\s*:/i.test(trimmed)){pushCurrent();continue}if(mode)buf.push(line)}pushCurrent();return pairs}
+function bmSetStatus(txt,cls){var el=document.getElementById('bm-st');if(!el)return;el.textContent=txt;el.className='bmst'+(cls?' '+cls:'')}
+function bmOpen(){var m=document.getElementById('bmd');if(!m)return;m.classList.add('on');if(!document.getElementById('bm-ta').value.trim())bmSetStatus('—','')}
+function bmClose(){var m=document.getElementById('bmd');if(m)m.classList.remove('on');var ta=document.getElementById('bm-ta');if(ta&&document.activeElement===ta)ta.blur()}
+function bmPreview(){var ta=document.getElementById('bm-ta');var dt=document.getElementById('bm-dt');if(!ta)return;var raw=ta.value;if(!raw.trim()){bmSetStatus('Kosong — paste dulu hasil AI-nya','');if(dt){dt.style.display='none';dt.innerHTML=''}return}var pairs=bmParsePairs(raw);if(pairs.length===0){bmSetStatus('❌ Tidak ada blok CARI/GANTI','err');if(dt){dt.style.display='none';dt.innerHTML=''}return}var simText=ed.value;var complete=0,found=0,notFound=0,incomplete=0;var items=[];for(var i=0;i<pairs.length;i++){var p=pairs[i];var hasFind=(typeof p.find==='string'&&p.find.length>0);var hasReplace=(typeof p.replace==='string');var status,snippet;if(hasFind&&hasReplace){complete++;var m=bmFindAnchor(simText,p.find);if(m){found++;status='ok';simText=simText.slice(0,m.index)+p.replace+simText.slice(m.index+m.length)}else{notFound++;status='miss'}snippet=p.find}else{incomplete++;status='bad';snippet=hasFind?p.find:(hasReplace?'(CARI kosong)':'(kosong)')}if(snippet.length>60)snippet=snippet.slice(0,57)+'...';snippet=snippet.replace(/\n/g,'⏎');items.push({n:i+1,status:status,snippet:snippet})}var msg='📋 '+pairs.length+' blok · '+complete+' lengkap · '+found+' cocok';if(notFound>0)msg+=' · '+notFound+' tidak ketemu';if(incomplete>0)msg+=' · '+incomplete+' tidak lengkap';bmSetStatus(msg,(complete>0&&found>0)?'ok':'err');if(dt){var icons={ok:'✓',miss:'✕',bad:'!'};var colors={ok:'var(--primary)',miss:'var(--red)',bad:'var(--mute)'};var html='';for(var k=0;k<items.length;k++){var it=items[k];html+='<div class="bi"><span style="color:'+colors[it.status]+';font-weight:700;flex-shrink:0">'+icons[it.status]+'</span><span style="color:var(--mute);min-width:20px;font-weight:700">#'+it.n+'</span><span style="flex:1;min-width:0;word-break:break-all;color:'+colors[it.status]+'">'+esc(it.snippet)+'</span></div>'}dt.innerHTML=html;dt.style.display='block'}}
+function bmApply(){var ta=document.getElementById('bm-ta');if(!ta)return;var raw=ta.value;if(!raw.trim()){toast('Paste dulu hasil AI-nya','e');return}var pairs=bmParsePairs(raw);if(pairs.length===0){toast('Tidak ada blok CARI/GANTI','e');bmSetStatus('❌ Tidak ada blok','err');return}var valid=[],invalid=0;for(var i=0;i<pairs.length;i++){var p=pairs[i];if(typeof p.find==='string'&&p.find.length>0&&typeof p.replace==='string')valid.push(p);else invalid++}if(valid.length===0){toast('Semua blok tidak lengkap','e');bmSetStatus('❌ Semua blok tidak lengkap','err');return}var msg='Terapkan '+valid.length+' perubahan ke kode?';if(invalid>0)msg+='\n\n⚠️ '+invalid+' blok dilewati (tidak lengkap)';if(!confirm(msg))return;var applied=0,notFound=0;var fileName=(gf(S.openId)||{}).name||'scratch';for(var q=0;q<valid.length;q++){var pp=valid[q];var text=ed.value;var m=bmFindAnchor(text,pp.find);if(m){ed.value=text.slice(0,m.index)+pp.replace+text.slice(m.index+m.length);applied++;try{log('activity','Batch #'+(q+1)+': ✓ diterapkan',fileName)}catch(e){}}else{notFound++;try{log('error','Batch #'+(q+1)+': ✕ tidak ketemu',fileName)}catch(e){}}}try{ed.dispatchEvent(new Event('input'))}catch(e){}var rmsg='✅ '+applied+'/'+valid.length+' diterapkan';if(notFound>0)rmsg+=' · '+notFound+' tidak ketemu';if(invalid>0)rmsg+=' · '+invalid+' dilewati';bmSetStatus(rmsg,applied>0?'ok':'err');toast('Batch: '+applied+'/'+valid.length+' berhasil',applied>0?'':'e');bmPreview()}
+(function(){var bmd=document.getElementById('bmd');if(!bmd)return;var tl=document.getElementById('tl');if(tl&&!tl.querySelector('[data-a="batch"]')){tl.insertAdjacentHTML('beforeend','<button class="ib" data-a="batch" title="Batch Replace" style="color:var(--primary)"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></button>')}bmd.addEventListener('click',function(e){if(e.target===bmd)bmClose()});var closeBtn=document.getElementById('bm-close');if(closeBtn)closeBtn.addEventListener('click',bmClose);var checkBtn=document.getElementById('bm-check');if(checkBtn)checkBtn.addEventListener('click',bmPreview);var applyBtn=document.getElementById('bm-apply');if(applyBtn)applyBtn.addEventListener('click',bmApply);var pasteBtn=document.getElementById('bm-paste');if(pasteBtn)pasteBtn.addEventListener('click',function(){if(!navigator.clipboard||!navigator.clipboard.readText){toast('Tekan lama di kotak → Paste manual','e');return}navigator.clipboard.readText().then(function(t){if(!t){toast('Clipboard kosong','e');return}document.getElementById('bm-ta').value=t;bmPreview();toast('Paste '+t.length+' karakter')}).catch(function(){toast('Clipboard diblokir — tekan lama di kotak, Paste manual','e')})});var clearBtn=document.getElementById('bm-clear');if(clearBtn)clearBtn.addEventListener('click',function(){var ta=document.getElementById('bm-ta');if(!ta.value){toast('Sudah kosong');return}ta.value='';bmSetStatus('—','');var dt=document.getElementById('bm-dt');if(dt){dt.innerHTML='';dt.style.display='none'}});var ta=document.getElementById('bm-ta');if(ta){var t=null;ta.addEventListener('input',function(){clearTimeout(t);t=setTimeout(bmPreview,500)})}document.addEventListener('keydown',function(e){if(e.key==='Escape'&&bmd.classList.contains('on'))bmClose()});if(typeof A!=='undefined'){A.batch=function(){bmOpen()}}})();
+/* ===== Prompt AI Batch: tap = copy, long-press = edit ===== */
+var AI_PROMPT_BATCH_DEFAULT=[
+'KONTEKS:',
+'Saya mengedit file HTML single-file di Android. Editor saya punya fitur "Batch Replace" yang mengeksekusi blok CARI/GANTI BERURUTAN dari atas ke bawah (blok 1 dulu, tunggu, blok 2, tunggu, dst). Setiap blok dicek TERHADAP STATE FILE SAAT ITU, bukan terhadap file awal.',
+'Konsekuensinya: kalau blok #2 anchor-nya berada di area yang sudah diubah oleh blok #1, anchor #2 WAJIB merujuk ke teks SETELAH perubahan blok #1 (bukan teks asli).',
+'',
+'Total: [N] perubahan',
+'',
+'FORMAT WAJIB TIAP PERUBAHAN:',
+'',
+'Struktur tiap Perubahan WAJIB:',
+'- Baris "Perubahan N: judul singkat" di LUAR code block',
+'- Baris "Lokasi: ..." di LUAR code block',
+'- Satu code block (tiga backtick) berisi HANYA CARI + GANTI DENGAN',
+'- Baris "Fungsi: ..." di LUAR code block',
+'',
+'Contoh:',
+'',
+'Perubahan 1: Ganti max-height',
+'Lokasi: field-input CSS',
+'',
+'```',
+'CARI:',
+'    max-height: 46px;',
+'',
+'GANTI DENGAN:',
+'    max-height: 120px;',
+'```',
+'',
+'Fungsi: Kolom input lebih tinggi.',
+'',
+'Pisahkan tiap Perubahan dengan garis ---',
+'',
+'ATURAN KETAT:',
+'',
+'1. Anchor CARI harus UNIK di file. Kalau muncul 2x atau lebih, perpanjang anchor sampai unik.',
+'',
+'2. CARI idealnya SATU BARIS saja. JANGAN gabung beberapa baris dengan tag penutup (seperti </style> atau </div>) karena biasanya ada ENTER di antaranya yang sulit diketik user.',
+'   BENAR:  CARI: margin-bottom:11px',
+'',
+'2b. Label "CARI:" dan "GANTI DENGAN:" WAJIB berdiri SENDIRI di barisnya. Isi teks dimulai di baris BARU. JANGAN tulis "CARI: [teks]" dalam satu baris.',
+'   SALAH:  CARI: margin-bottom:11px}</style>',
+'',
+'2c. Kalau single-line TIDAK bisa unik (muncul 2x atau lebih), boleh pakai 2-3 baris berurutan yang identik persis termasuk enter dan spasi.',
+'',
+'2d. WAJIB: kirim SEMUA perubahan dalam SATU code block panjang. Di dalam code block itu, tulis CARI/GANTI berurutan, pisahkan tiap blok dengan garis ---. JANGAN pecah jadi beberapa code block terpisah.',
+'',
+'Contoh struktur 1 code block yang benar (2 perubahan):',
+'',
+'```',
+'CARI:',
+'teks asli pertama',
+'',
+'GANTI DENGAN:',
+'teks baru pertama',
+'',
+'---',
+'',
+'CARI:',
+'teks asli kedua',
+'',
+'GANTI DENGAN:',
+'teks baru kedua',
+'```',
+'',
+'SALAH: memecah jadi 2 code block terpisah (Perubahan 1 di block A, Perubahan 2 di block B).',
+'',
+'2e. URUTAN BLOK WAJIB TOP-DOWN: Blok 1 harus di posisi file paling atas, blok 2 di bawahnya, dst. JANGAN acak. Ini karena eksekusi berurutan dari atas ke bawah.',
+'',
+'2f. Kalau blok #2 anchor-nya berada di area yang diubah oleh blok #1, anchor #2 harus merujuk ke teks SETELAH perubahan blok #1. Contoh: blok #1 mengubah "<div class=old>" jadi "<div class=new>", maka blok #2 yang menyentuh div yang sama harus cari "<div class=new>", bukan "<div class=old>".',
+'',
+'3. JANGAN pakai kalimat "sisipkan di antara X dan Y". Ubah jadi: CARI: [X], GANTI: [X + teks baru].',
+'',
+'4. KIRIM SEMUA perubahan dalam 1 balasan, dalam 1 code block panjang. Mau 3, 5, atau 10 perubahan, semuanya masuk ke code block yang SAMA. Saya akan tap "Salin" sekali, paste ke modal Batch, lalu tap Terapkan sekali. JANGAN bilang "REPLACE SELURUH FILE" dan JANGAN kirim full file.',
+'',
+'5. JANGAN ubah bagian yang tidak saya minta. Kalau ada yang menurutmu perlu diubah, sebutkan dulu dan tunggu izin.',
+'',
+'6. Kalau saya minta "fix error", TANYA DULU: error apa, di bagian mana, pesan errornya apa.',
+'',
+'7. Kalau ada catatan atau peringatan (anchor kepanjangan, dead code, CSS duplikat, edge case), tulis sebagai "Catatan penting:" di LUAR code block, SETELAH baris "Fungsi:". Jangan campur ke dalam code block CARI/GANTI.',
+'',
+'8. Output harus RINGKAS. Tidak perlu penjelasan panjang. Langsung CARI-GANTI.',
+'',
+'9. Kalau kode HTML panjang, PECAH jadi beberapa CARI-GANTI kecil. Anchor tiap blok harus unik PADA SAAT BLOK ITU DIEKSEKUSI (setelah blok-blok sebelumnya diterapkan).',
+'',
+'10. Di akhir jawaban, kasih 1-2 langkah TES singkat supaya saya bisa verifikasi hasilnya.',
+'',
+'BAHASA: Indonesia santai. Istilah teknis (tag, atribut, function) tetap bahasa Inggris.',
+'',
+'Apakah kamu paham? Kalau iya, balas "SIAP" dan tunggu saya kirim kode/perintah.'
+].join('\n');
+function getPromptBatch(){try{var v=localStorage.getItem('vault_prompt_batch');return v||AI_PROMPT_BATCH_DEFAULT}catch(e){return AI_PROMPT_BATCH_DEFAULT}}
+function setPromptBatch(v){try{localStorage.setItem('vault_prompt_batch',v)}catch(e){}}
+function copyPromptBatchLegacy(t){try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();var ok=document.execCommand('copy');document.body.removeChild(ta);toast(ok?'Prompt AI dicopy ('+t.length+' char)':'Gagal copy','e')}catch(e){toast('Gagal copy','e')}}
+function copyPromptBatch(){var t=getPromptBatch();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast('Prompt AI dicopy ('+t.length+' char)')}).catch(function(){copyPromptBatchLegacy(t)})}else{copyPromptBatchLegacy(t)}}
+function openPromptEditor(){var m=document.getElementById('pemd');if(!m)return;var ta=document.getElementById('pemd-ta');ta.value=getPromptBatch();m.classList.add('on')}
+function closePromptEditor(){var m=document.getElementById('pemd');if(!m)return;m.classList.remove('on');var ta=document.getElementById('pemd-ta');if(ta&&document.activeElement===ta)ta.blur()}
+(function(){var btn=document.getElementById('bm-prompt');if(!btn)return;var timer=null,wasLong=false,lastTouch=0;function start(){wasLong=false;if(timer)clearTimeout(timer);timer=setTimeout(function(){timer=null;wasLong=true;try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}openPromptEditor()},500)}function end(e){if(timer){clearTimeout(timer);timer=null}if(wasLong){if(e&&e.preventDefault)e.preventDefault();wasLong=false;return}copyPromptBatch()}function cancel(){if(timer){clearTimeout(timer);timer=null}wasLong=false}btn.addEventListener('touchstart',function(){lastTouch=Date.now();start()},{passive:true});btn.addEventListener('touchend',function(e){end(e)});btn.addEventListener('touchcancel',cancel);btn.addEventListener('mousedown',function(){if(Date.now()-lastTouch<800)return;start()});btn.addEventListener('mouseup',function(e){if(Date.now()-lastTouch<800)return;end(e)});btn.addEventListener('mouseleave',cancel);btn.addEventListener('contextmenu',function(e){e.preventDefault()})})();
+(function(){var m=document.getElementById('pemd');if(!m)return;m.addEventListener('click',function(e){if(e.target===m)closePromptEditor()});var cb=document.getElementById('pemd-close');if(cb)cb.addEventListener('click',closePromptEditor);var rb=document.getElementById('pemd-reset');if(rb)rb.addEventListener('click',function(){if(!confirm('Kembalikan ke prompt default?'))return;document.getElementById('pemd-ta').value=AI_PROMPT_BATCH_DEFAULT;toast('Direset — tap Simpan untuk menyimpan')});var sb=document.getElementById('pemd-save');if(sb)sb.addEventListener('click',function(){var v=document.getElementById('pemd-ta').value;if(!v.trim()){toast('Prompt kosong','e');return}setPromptBatch(v);toast('Prompt disimpan ('+v.length+' char)');closePromptEditor()});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('on'))closePromptEditor()})})();
 document.addEventListener("contextmenu",e=>{if(e.target.closest("input,textarea,[contenteditable]"))return;e.preventDefault()});
 </script>
 <script>
