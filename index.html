@@ -105,6 +105,10 @@ mark{background:var(--primary);color:var(--on);border-radius:4px;padding:0 2px}
 #snv.on{transform:none}
 #snb{position:absolute;inset:0;z-index:7;display:none}#snb.on{display:block}
 #perr{position:absolute;left:10px;right:10px;bottom:14px;z-index:5;padding:12px;border-radius:16px;background:var(--red);color:#fff;font-size:13px;display:none}
+.p-live-ind{position:absolute;left:12px;top:calc(8px + env(safe-area-inset-top));z-index:9;display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:99px;background:color-mix(in srgb,var(--card) 72%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font-size:11px;font-weight:700;letter-spacing:.3px;color:var(--text);pointer-events:none;opacity:.92;box-shadow:0 4px 14px rgba(0,0,0,.18);transition:opacity .25s}
+.p-live-ind::before{content:"";width:8px;height:8px;border-radius:50%;background:#3fb950;flex-shrink:0;animation:pdot 1.6s infinite}
+.p-live-ind small{color:var(--mute);font-weight:400;font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0}
+@keyframes pdot{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(63,185,80,.55)}50%{opacity:.55;box-shadow:0 0 0 6px rgba(63,185,80,0)}}
 .sc{flex:1;overflow:auto;padding:0 14px 30px;display:grid;gap:12px;align-content:start}
 .cd{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:14px;display:grid;gap:10px}
 .cd h4{font-size:14px}.rw{display:flex;align-items:center;gap:10px;justify-content:space-between}
@@ -155,6 +159,7 @@ input,textarea,select,[contenteditable]{user-select:text;-webkit-user-select:tex
   <div class="bb"><button class="bt pr" data-a="save">Simpan ke Vault</button><button class="bt" data-a="saveas">Simpan baru</button><button class="bt" data-a="run">Jalankan</button></div>
  </section>
  <section class="pg" id="p-preview">
+  <div class="p-live-ind" id="plive">LIVE<small id="plive-name"></small></div>
   <button id="pbtn" aria-label="Menu preview"></button>
   <div id="pmb"></div>
   <div id="pmn"></div>
@@ -350,7 +355,7 @@ window.addEventListener("message",e=>{if(e.source!==fr.contentWindow||!e.data||!
  else if(t==="e"){log("error",m,n);renderCons();const b=$("#perr");b.textContent="Error: "+m;b.style.display="block"}});
 const DEV=["100%","390px","768px"];
 $("#pbtn").innerHTML='<svg viewBox="0 0 24 24" style="stroke-width:2.5"><path d="M5.5 12h.01M12 12h.01M18.5 12h.01"/></svg>';
-const PMR=[[["Beranda","home","pm-home"],["Kode","code","pm-code"],["Console","term","pm-cons"]],[["Refresh","reload","reload"],["Canvas","dev","dev"],["Browser","ext","ext"]]];
+const PMR=[[["Beranda","home","pm-home"],["Kode","code","pm-code"],["Console","term","pm-cons"]],[["Refresh","reload","reload"],["Canvas","dev","dev"],["Browser","ext","ext"],["Lint","sel","pm-lint"]]];
 $("#pmn").innerHTML=PMR.map(r=>'<div class="r">'+r.map(x=>'<button class="pi" data-a="'+x[2]+'">'+ic(x[1])+'<span>'+x[0]+'</span></button>').join("")+'</div>').join("");
 const pmn=$("#pmn"),pmb=$("#pmb");
 const closePm=()=>{pmn.classList.remove("on");pmb.classList.remove("on")};
@@ -579,6 +584,70 @@ function openPromptEditor(){var m=document.getElementById('pemd');if(!m)return;v
 function closePromptEditor(){var m=document.getElementById('pemd');if(!m)return;m.classList.remove('on');var ta=document.getElementById('pemd-ta');if(ta&&document.activeElement===ta)ta.blur()}
 (function(){var btn=document.getElementById('bm-prompt');if(!btn)return;var timer=null,wasLong=false,lastTouch=0;function start(){wasLong=false;if(timer)clearTimeout(timer);timer=setTimeout(function(){timer=null;wasLong=true;try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}openPromptEditor()},500)}function end(e){if(timer){clearTimeout(timer);timer=null}if(wasLong){if(e&&e.preventDefault)e.preventDefault();wasLong=false;return}copyPromptBatch()}function cancel(){if(timer){clearTimeout(timer);timer=null}wasLong=false}btn.addEventListener('touchstart',function(){lastTouch=Date.now();start()},{passive:true});btn.addEventListener('touchend',function(e){end(e)});btn.addEventListener('touchcancel',cancel);btn.addEventListener('mousedown',function(){if(Date.now()-lastTouch<800)return;start()});btn.addEventListener('mouseup',function(e){if(Date.now()-lastTouch<800)return;end(e)});btn.addEventListener('mouseleave',cancel);btn.addEventListener('contextmenu',function(e){e.preventDefault()})})();
 (function(){var m=document.getElementById('pemd');if(!m)return;m.addEventListener('click',function(e){if(e.target===m)closePromptEditor()});var cb=document.getElementById('pemd-close');if(cb)cb.addEventListener('click',closePromptEditor);var rb=document.getElementById('pemd-reset');if(rb)rb.addEventListener('click',function(){if(!confirm('Kembalikan ke prompt default?'))return;document.getElementById('pemd-ta').value=AI_PROMPT_BATCH_DEFAULT;toast('Direset — tap Simpan untuk menyimpan')});var sb=document.getElementById('pemd-save');if(sb)sb.addEventListener('click',function(){var v=document.getElementById('pemd-ta').value;if(!v.trim()){toast('Prompt kosong','e');return}setPromptBatch(v);toast('Prompt disimpan ('+v.length+' char)');closePromptEditor()});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('on'))closePromptEditor()})})();
+/* ===== Static HTML Lint (port dari HTML Playground) ===== */
+function lintHtml(html){
+  var issues=[];var m;
+  var voidTags=/^(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/i;
+  var cleanHtml=html.replace(/<script\b[\s\S]*?<\/script>/gi,'').replace(/<style\b[\s\S]*?<\/style>/gi,'').replace(/<!--[\s\S]*?-->/g,'');
+  var tagStack=[];var tagRe=/<\/?([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*?(\/)?>/g;
+  while((m=tagRe.exec(cleanHtml))!==null){
+    var full=m[0];var name=m[1].toLowerCase();var isClosing=full.charAt(1)==='/';var isSelfClose=m[2]==='/';
+    if(voidTags.test(name)||isSelfClose)continue;
+    if(isClosing){
+      if(tagStack.length===0){issues.push({type:'err',msg:'Tag penutup </'+name+'> tanpa pembuka'})}
+      else if(tagStack[tagStack.length-1]===name){tagStack.pop()}
+      else{var idx=tagStack.lastIndexOf(name);if(idx>=0){for(var k=tagStack.length-1;k>idx;k--){issues.push({type:'warn',msg:'Tag <'+tagStack[k]+'> mungkin tidak ditutup'})}tagStack.splice(idx)}else{issues.push({type:'warn',msg:'Tag </'+name+'> tidak cocok dengan <'+tagStack[tagStack.length-1]+'>'})}}
+    }else{tagStack.push(name)}
+  }
+  for(var kk=0;kk<tagStack.length;kk++){issues.push({type:'warn',msg:'Tag <'+tagStack[kk]+'> tidak ditutup'})}
+  var idRe=/\sid\s*=\s*["']([^"']+)["']/gi;var ids={};
+  while((m=idRe.exec(html))!==null){var idVal=m[1];if(ids[idVal])issues.push({type:'err',msg:'ID duplikat: "'+idVal+'"'});ids[idVal]=true}
+  var imgRe=/<img\b[^>]*>/gi;var imgNoAlt=0;
+  while((m=imgRe.exec(html))!==null){if(!/\balt\s*=/.test(m[0]))imgNoAlt++}
+  if(imgNoAlt>0)issues.push({type:'warn',msg:imgNoAlt+' <img> tanpa atribut alt'});
+  var aRe=/<a\b[^>]*href\s*=\s*["']\s*["'][^>]*>/gi;var emptyHref=0;
+  while((m=aRe.exec(html))!==null)emptyHref++;
+  if(emptyHref>0)issues.push({type:'warn',msg:emptyHref+' <a> dengan href kosong'});
+  var depRe=/<(center|font|marquee|blink|frame|frameset|applet|basefont|dir|isindex)\b/gi;var depSeen={};
+  while((m=depRe.exec(html))!==null){var tn=m[1].toLowerCase();if(!depSeen[tn]){depSeen[tn]=true;issues.push({type:'info',msg:'Tag deprecated: <'+tn+'>'})}}
+  if(html.trim().length>0&&!/^\s*<!DOCTYPE/i.test(html)){issues.push({type:'warn',msg:'Tidak ada <!DOCTYPE html>'})}
+  if(/<html\b[^>]*>/i.test(html)&&!/<html\b[^>]*\blang\s*=/i.test(html)){issues.push({type:'info',msg:'<html> tanpa atribut lang'})}
+  if(/<head\b/i.test(html)&&!/<meta\b[^>]*name\s*=\s*["']viewport["']/i.test(html)){issues.push({type:'info',msg:'Tidak ada meta viewport'})}
+  if(/<head\b/i.test(html)&&!/<meta\b[^>]*charset/i.test(html)){issues.push({type:'info',msg:'Tidak ada meta charset'})}
+  var emptySrcRe=/<(img|script|iframe|source)\b[^>]*src\s*=\s*["']\s*["']/gi;var emptySrc=0;
+  while((m=emptySrcRe.exec(html))!==null)emptySrc++;
+  if(emptySrc>0)issues.push({type:'warn',msg:emptySrc+' tag dengan src kosong'});
+  return issues;
+}
+function runLint(){
+  var code=ed.value;
+  if(!code.trim()){toast('Kode masih kosong','e');return}
+  var issues=lintHtml(code);
+  var errs=0,warns=0,infos=0;
+  for(var i=0;i<issues.length;i++){if(issues[i].type==='err')errs++;else if(issues[i].type==='warn')warns++;else infos++}
+  var icons={err:'❌',warn:'⚠️',info:'ℹ️'};
+  var colors={err:'var(--red)',warn:'var(--mute)',info:'var(--primary)'};
+  var html='<div class="gr"></div><h3>🔍 Hasil Lint</h3><small>'+errs+' error · '+warns+' warning · '+infos+' info</small>';
+  if(issues.length===0){
+    html+='<div style="padding:32px 12px;text-align:center;font-weight:600;color:var(--primary)">✅ Kode bersih! Tidak ada masalah terdeteksi.</div>';
+  }else{
+    html+='<div style="max-height:55vh;overflow-y:auto;margin-top:4px;padding:0 2px">';
+    for(var j=0;j<issues.length;j++){
+      var it=issues[j];
+      html+='<div style="display:flex;gap:10px;padding:9px 12px;border-radius:12px;margin-bottom:4px;background:var(--bg);font-size:13px;line-height:1.4;align-items:flex-start"><span style="flex-shrink:0;font-size:14px">'+icons[it.type]+'</span><span style="flex:1;min-width:0;word-break:break-word;color:'+colors[it.type]+'">'+esc(it.msg)+'</span></div>';
+    }
+    html+='</div>';
+  }
+  html+='<button class="bt pr" data-lint-close style="margin-top:8px">Tutup</button>';
+  shc.innerHTML=html;
+  sh._it=[];
+  sh.classList.add('on');
+  var cb=shc.querySelector('[data-lint-close]');
+  if(cb)cb.addEventListener('click',closeSh);
+  toast('Lint: '+errs+' error · '+warns+' warning',errs>0?'e':'');
+  try{log(errs>0?'error':'activity','Lint: '+errs+' error, '+warns+' warn, '+infos+' info',(gf(S.openId)||{}).name||'scratch')}catch(e){}
+}
+if(typeof A!=='undefined'){A['pm-lint']=function(){closePm();runLint()}}
 document.addEventListener("contextmenu",e=>{if(e.target.closest("input,textarea,[contenteditable]"))return;e.preventDefault()});
 </script>
 <script>
