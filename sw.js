@@ -6,7 +6,7 @@
    - Request non-GET / beda origin : dilewatkan
    ========================================================= */
 
-const VERSION = "1.0.1";
+const VERSION = "1.0.2";
 const STATIC_CACHE  = "vault-static-"  + VERSION;
 const RUNTIME_CACHE = "vault-runtime-" + VERSION;
 
