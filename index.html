@@ -4,10 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#2f6f5e">
-<link rel="manifest" href="manifest.json">
+<!-- ===== PWA ===== -->
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png">
+<meta name="description" content="HTML Vault Pro — editor & vault HTML offline. Simpan, kelola folder, preview langsung, dan console. Semua data tersimpan di perangkat.">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="Vault">
+<meta name="application-name" content="HTML Vault Pro">
 <title>HTML Vault Pro</title>
 <style>
 /* ===== Tema (CSS variables) ===== */
@@ -171,7 +178,7 @@ const dbClear=s=>tx(s,"readwrite",o=>o.clear());
 let files=[],folders=[],logs=[];
 async function refresh(){[files,folders,logs]=await Promise.all([dbAll("files"),dbAll("folders"),dbAll("logs")]);logs.sort((a,b)=>b.timestamp-a.timestamp)}
 function log(type,message,fileName){const l={id:uid(),type,message:String(message),fileName:fileName||"",timestamp:Date.now()};logs.unshift(l);dbPut("logs",l).catch(()=>{})}
-const S={page:"home",folder:null,q:"",openId:null,lt:"save",lq:"",dirty:false,dev:0,deferred:null,prev:null, cons:false};
+const S={page:"home",folder:null,q:"",openId:null,lt:"save",lq:"",dirty:false,dev:0,deferred:null,prev:null,cons:false};
 const gf=id=>files.find(f=>f.id===id);
 const path=id=>{const a=[];while(id){const f=folders.find(x=>x.id===id);if(!f)break;a.unshift(f.name);id=f.parentId}return a};
 let tt;function toast(m,t){const e=$("#toast");e.textContent=m;e.className="on "+(t||"");clearTimeout(tt);tt=setTimeout(()=>e.className="",2600)}
@@ -197,7 +204,11 @@ function go(p){
   closeMenu(); closeSnv();
   document.querySelectorAll(".pg").forEach(e=>e.classList.toggle("on",e.id==="p-"+p));
   document.querySelectorAll(".mi[data-p]").forEach(m=>m.classList.toggle("cur",m.dataset.p===p&&m.textContent!=="Info Storage"));
-  if(p==="home")renderList();if(p==="settings")renderSet();if(p==="log")renderLog();if(p==="editor")updCount();if(p==="preview")runPreview(false);
+  if(p==="home")renderList();
+  if(p==="settings")renderSet();
+  if(p==="log")renderLog();
+  if(p==="editor")updCount();
+  if(p==="preview"){runPreview(false);$("#cons").classList.toggle("on",S.cons);if(S.cons)renderCons()}
   ls.set("lastPage",p);
 }
 function closeMenu(){menu.classList.remove("on")}
@@ -264,14 +275,24 @@ async function saveCur(auto){const f=gf(S.openId);if(!f)return false;if(!ed.valu
  const v=ed.value;try{await updFile(f,{content:v,size:new Blob([v]).size,lines:v.split("\n").length,chars:v.length});setDirty(false);if(!auto){toast("Disimpan");log("save","Disimpan ke Vault",f.name);vib()}return true}catch(e){return false}}
 async function saveAs(){const n=await modal("Simpan sebagai file baru",{input:1,val:"baru.html",ok:"Simpan"});if(!n)return;const tgt=ST.remember&&ST.lastFolder!==undefined&&(ST.lastFolder===null||folders.some(x=>x.id===ST.lastFolder))?ST.lastFolder:S.folder;
  try{const f=await addFile(/\.html?$/i.test(n)?n:n+".html",ed.value,tgt);S.openId=f.id;ls.set("lastOpenedFileId",f.id);if(ST.remember){ST.lastFolder=tgt;saveST()}setDirty(false);toast("File baru dibuat")}catch(e){}}
-function openFile(id){const f=gf(id);if(!f)return;S.openId=id;ls.set("lastOpenedFileId",id);ed.value=f.content;ed.scrollTop=0;updCount();setDirty(false);runPreview(true);go("preview")}
-function newFile(){S.openId=null;ed.value="<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"><title>Baru</title></head>\n<body>\n  \n</body>\n</html>";updCount();setDirty(true);go("editor")}
+async function openFile(id){
+  const f=gf(id);if(!f)return;
+  if(S.openId===id){runPreview(true);go("preview");return}
+  clearTimeout(at);
+  if(S.dirty&&S.openId&&ST.autosave)await saveCur(true);
+  S.openId=id;ls.set("lastOpenedFileId",id);
+  ed.value=f.content;ed.scrollTop=0;updCount();setDirty(false);
+  runPreview(true);go("preview");
+}
+function newFile(){S.openId=null;ls.set("lastOpenedFileId",null);clearTimeout(at);ed.value="<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"><title>Baru</title></head>\n<body>\n  \n</body>\n</html>";updCount();setDirty(true);go("editor")}
 const fr=$("#fr");
 const INJ="<script>(function(){var p=parent;function s(t,m){p.postMessage({vault:t,m:m},'*')}['log','warn','error'].forEach(function(k){var o=console[k];console[k]=function(){try{s('c',k+': '+[].slice.call(arguments).join(' '))}catch(e){}o.apply(console,arguments)}});addEventListener('error',function(e){s('e',e.message)});var t;addEventListener('scroll',function(){clearTimeout(t);t=setTimeout(function(){s('s',scrollY)},80)});addEventListener('load',function(){s('r',0)})})()<\/script>";
 function runPreview(force){const h=ed.value;if(!force&&S.prev===h)return;S.prev=h;$("#perr").style.display="none";if(force)ls.set("lastScrollY",0);fr.srcdoc=h?INJ+h:""}
 window.addEventListener("message",e=>{if(e.source!==fr.contentWindow||!e.data||!e.data.vault)return;const{vault:t,m}=e.data,n=(gf(S.openId)||{}).name||"scratch";
- if(t==="s")ls.set("lastScrollY",m);else if(t==="r"){const y=ls.get("lastScrollY",0);if(y)try{fr.contentWindow.scrollTo(0,y)}catch(x){}}
- else if(t==="c"){log("console",m,n);renderCons()}else if(t==="e"){log("error",m,n);renderCons();const b=$("#perr");b.textContent="Error: "+m;b.style.display="block"}});
+ if(t==="s")ls.set("lastScrollY",m);
+ else if(t==="r"){const y=ls.get("lastScrollY",0);if(y)try{fr.contentWindow.scrollTo(0,y)}catch(x){}}
+ else if(t==="c"){log("console",m,n);renderCons()}
+ else if(t==="e"){log("error",m,n);renderCons();const b=$("#perr");b.textContent="Error: "+m;b.style.display="block"}});
 const DEV=["100%","390px","768px"];
 $("#pbtn").innerHTML='<svg viewBox="0 0 24 24" style="stroke-width:2.5"><path d="M5.5 12h.01M12 12h.01M18.5 12h.01"/></svg>';
 const PMR=[[["Beranda","home","pm-home"],["Kode","code","pm-code"],["Console","term","pm-cons"]],[["Refresh","reload","reload"],["Canvas","dev","dev"],["Browser","ext","ext"]]];
@@ -332,7 +353,7 @@ const A={
  lexp(){const tx=logs.map(l=>dt(l.timestamp)+" ["+l.type+"] "+l.fileName+" "+l.message).join("\n"),a=document.createElement("a");a.href=URL.createObjectURL(new Blob([tx],{type:"text/plain"}));a.download="log.txt";a.click()},
  async lclr(){if(await modal("Hapus log?",{ok:"Hapus",danger:1})){await dbClear("logs");logs=[];renderLog()}}
 };
-document.addEventListener("click",e=>{if(!e.target.closest("#menu,.mb"))closeMenu();const t=e.target.closest("[data-a]");if(t&&A[t.dataset.a]){if(t.dataset.a!=="menu")vib();A[t.dataset.a](t,e)}});
+document.addEventListener("click",e=>{if(!e.target.closest("#menu,.mb"))closeMenu();const t=e.target.closest("[data-a]");if(t&&Object.prototype.hasOwnProperty.call(A,t.dataset.a)){if(t.dataset.a!=="menu")vib();A[t.dataset.a](t,e)}});
 $("#fin").onchange=e=>{importList([...e.target.files]);e.target.value=""};
 $("#rin").onchange=async e=>{try{const d=JSON.parse(await e.target.files[0].text());for(const f of d.files||[])await dbPut("files",f);for(const f of d.folders||[])await dbPut("folders",f);for(const f of d.logs||[])await dbPut("logs",f);await refresh();renderSet();toast("Restore selesai")}catch(x){toast("File backup tidak valid","e")}e.target.value=""};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(md.classList.contains("on"))md.click();else{closeSh();closeMenu();closeSnv()}}
@@ -340,64 +361,11 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(md.classList.con
 if(window.visualViewport){const f=()=>{$("#app").style.height=visualViewport.height+"px"};visualViewport.addEventListener("resize",f);f()}
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();S.deferred=e});
 
-// popstate dibersihkan - tidak ada trap back di versi clean
 window.addEventListener("popstate",()=>{});
 window.addEventListener("error",e=>{try{log("error",e.message)}catch(x){}});
 window.addEventListener("unhandledrejection",e=>{try{log("error",e.reason&&e.reason.message||e.reason)}catch(x){}});
 window.addEventListener("beforeunload",()=>{if(S.dirty&&S.openId)ls.set("lastEditorContent",ed.value.length>2e6?"":ed.value)});
 
-/* ===== PWA - Service Worker & Back Lock khusus Preview (hanya di mode PWA) ===== */
-const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || document.referrer.includes('android-app://');
-
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js').then(()=>console.log('SW registered')).catch(e=>console.warn('SW fail', e));
-  });
-}
-
-// State tambahan untuk PWA back lock
-S.allowBackPWA = false;
-
-const _goOriginal = go;
-go = function(p){
-  const wasPv = S.page==="preview";
-  const nowStandalone = isStandalone();
-  
-  // Jika keluar dari preview lewat UI di mode PWA, izinkan 1x back untuk bersih-bersih
-  if(wasPv && p!=="preview" && nowStandalone && S.blockBackPWA){
-    S.blockBackPWA = false;
-    S.allowBackPWA = true;
-    try{ history.back(); }catch(e){}
-  }
-
-  S.page = p;
-  closeMenu(); closeSnv();
-  document.querySelectorAll(".pg").forEach(e=>e.classList.toggle("on",e.id==="p-"+p));
-  document.querySelectorAll(".mi[data-p]").forEach(m=>m.classList.toggle("cur",m.dataset.p===p&&m.textContent!=="Info Storage"));
-  if(p==="home")renderList();if(p==="settings")renderSet();if(p==="log")renderLog();if(p==="editor")updCount();if(p==="preview")runPreview(false);
-  ls.set("lastPage",p);
-
-  if(p==="preview" && !wasPv && nowStandalone){
-    S.blockBackPWA = true;
-    try{ history.pushState({previewTrap:true, t:Date.now()},"",location.href); }catch(e){}
-  }
-};
-
-// Override popstate clean dengan yang PWA-aware
-window.addEventListener("popstate", (e)=>{
-  if(S.allowBackPWA){
-    S.allowBackPWA = false;
-    S.blockBackPWA = false;
-    return;
-  }
-  if(S.page==="preview" && S.blockBackPWA && isStandalone()){
-    try{ history.pushState({previewTrap:true, t:Date.now()},"",location.href); }catch(err){}
-    toast("Preview terkunci. Pakai menu ⋯ > Beranda / Kode untuk keluar.");
-    vib();
-  }
-});
-
-try{const m={name:"HTML Vault Pro",short_name:"Vault",display:"standalone",start_url:".",background_color:"#f6f5f2",theme_color:"#2f6f5e",icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#2f6f5e"/><path d="M30 24h22l14 14v34H30z" fill="none" stroke="#fff" stroke-width="4"/></svg>'),sizes:"any",type:"image/svg+xml"}]};const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/manifest+json"}));document.head.appendChild(l)}catch(e){}
 const TOUR=["Import file .html dengan tombol Import atau seret ke layar. Semua tersimpan di perangkat.","Ketuk file untuk membuka, ubah nama, ekspor, atau hapus ke Trash. Tahan folder untuk mengelolanya.","Di Preview, tarik garis kecil di kanan atas ke kiri untuk membuka navigasi."];
 async function tour(i){if(i>=TOUR.length){ls.set("onboarded",1);return}const ok=await modal("Cara pakai ("+(i+1)+"/3)",{msg:TOUR[i],ok:i<2?"Lanjut":"Mulai"});if(ok)tour(i+1);else ls.set("onboarded",1)}
 (async function(){applyST();$("#sort").value=ST.sort||"new";
@@ -405,6 +373,61 @@ async function tour(i){if(i>=TOUR.length){ls.set("onboarded",1);return}const ok=
  const id=ls.get("lastOpenedFileId",null),f=id&&gf(id);
  if(f&&!f.isTrashed){S.openId=id;const le=ls.get("lastEditorContent",null);ed.value=typeof le==="string"&&le&&le!==f.content?le:f.content;setDirty(ed.value!==f.content)}
  updCount();renderList();if(!ls.get("onboarded",0))tour(0)})();
+</script>
+<script>
+/* ===== PWA: registrasi service worker + sinkron theme-color ===== */
+(function () {
+  "use strict";
+
+  var TC = {
+    light: "#2f6f5e", dark: "#161618", midnight: "#000000", cream: "#f3ead8",
+    forest: "#12201a", ocean: "#1766b3", sunset: "#e0561f", dracula: "#282a36"
+  };
+  function syncTheme() {
+    var t = document.documentElement.dataset.t || "light";
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute("content", TC[t] || "#2f6f5e");
+  }
+  try {
+    new MutationObserver(syncTheme).observe(document.documentElement, {
+      attributes: true, attributeFilter: ["data-t"]
+    });
+  } catch (e) {}
+  syncTheme();
+
+  if (!("serviceWorker" in navigator)) return;
+
+  var refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", function () {
+    if (refreshing) return;
+    refreshing = true;
+    location.reload();
+  });
+
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("./sw.js", {
+      scope: "./",
+      updateViaCache: "none"
+    }).then(function (reg) {
+      reg.addEventListener("updatefound", function () {
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener("statechange", function () {
+          if (nw.state === "installed" && navigator.serviceWorker.controller) {
+            nw.postMessage("SKIP_WAITING");
+          }
+        });
+      });
+      reg.update().catch(function () {});
+setInterval(function () { reg.update().catch(function () {}); }, 30 * 60 * 1000);
+document.addEventListener("visibilitychange", function () {
+if (!document.hidden) reg.update().catch(function () {});
+});
+    }).catch(function (err) {
+      console.warn("[PWA] Service worker gagal didaftarkan:", err);
+    });
+  });
+})();
 </script>
 </body>
 </html>
